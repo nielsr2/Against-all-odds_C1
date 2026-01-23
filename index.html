@@ -3,7 +3,6 @@
 <head>
 <script>
 (function () {
-
   function twSetED(key, value) {
     try {
       if (window.parent && window.parent !== window) {
@@ -14,9 +13,13 @@
           "*"
         );
       }
-    } catch (e) {}
+    } catch (e) {
+      console.log("twSetED error:", e);
+    }
   }
+  window.twSetED = twSetED;
 
+  // session id
   var pid = sessionStorage.getItem("tw_pid");
   if (!pid) {
     pid = String(Math.floor(100000 + Math.random() * 900000));
@@ -25,35 +28,34 @@
   twSetED("tw_pid", pid);
   twSetED("tw_started", "yes");
 
-  function getPassageName() {
-    try {
-      if (window.State && typeof window.State.passage === "string") return window.State.passage;
-    } catch (e) {}
-    var p = document.querySelector("tw-passage");
-    if (!p) return "";
-    return (
-      p.getAttribute("name") ||
-      p.getAttribute("passage-name") ||
-      p.getAttribute("data-name") ||
-      ""
-    );
+  var choices = [];
+
+  function getFromPassage(linkEl) {
+    // most reliable: the tw-passage that contains the clicked link
+    var p = linkEl.closest && linkEl.closest("tw-passage");
+    return p ? (p.getAttribute("name") || "") : "";
   }
 
   document.addEventListener("click", function (e) {
     var link = e.target.closest && e.target.closest("tw-link");
-    var label = (link ? link.textContent : (e.target && e.target.textContent)) || "";
-    label = String(label).trim().slice(0, 80);
+    if (!link) return;
 
-    // ALWAYS send debug so we can see if handler fires
-    twSetED("tw_debug_clicked", "yes");
-    twSetED("tw_debug_label", label);
-    twSetED("tw_debug_from", getPassageName());
+    var to = link.getAttribute("passage-name") || "";
+    if (!to) return;
 
-    setTimeout(function () {
-      twSetED("tw_debug_to", getPassageName());
-    }, 200);
+    var from = getFromPassage(link);
+
+    // ONLY log: Choice_X -> Choice_X-1 or Choice_X-2
+    var isDecision = /^Choice_\d+$/.test(from) && /^Choice_\d+-(1|2)$/.test(to);
+    if (!isDecision) return;
+
+    var entry = from + "->" + to;
+    if (choices.length === 0 || choices[choices.length - 1] !== entry) {
+      choices.push(entry);
+      twSetED("tw_last_to", to);
+      twSetED("tw_log", choices.join("|"));
+    }
   }, true);
-
 })();
 </script>
   
