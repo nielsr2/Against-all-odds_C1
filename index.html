@@ -3,6 +3,7 @@
 <head>
 <script>
 (function () {
+  // Send key/value to Qualtrics (parent frame)
   function twSetED(key, value) {
     try {
       if (window.parent && window.parent !== window) {
@@ -18,7 +19,7 @@
     }
   }
 
-  // session ID
+  // Session ID (per browser session)
   var pid = sessionStorage.getItem("tw_pid");
   if (!pid) {
     pid = String(Math.floor(100000 + Math.random() * 900000));
@@ -27,29 +28,43 @@
   twSetED("tw_pid", pid);
   twSetED("tw_started", "yes");
 
-  // log only REAL story choices (not Next / UI)
+  // Log ONLY real choices: Choice_X -> Choice_X-Y
   var log = [];
 
-  function getCurrentPassageName() {
+  function getPassageName() {
     var p = document.querySelector("tw-passage");
     return p ? (p.getAttribute("name") || "") : "";
   }
 
-  ddocument.addEventListener("click", function (e) {
-  var link = e.target.closest && e.target.closest("tw-link");
-  if (!link) return;
+  document.addEventListener("click", function (e) {
+    var link = e.target.closest && e.target.closest("tw-link");
+    if (!link) return;
 
-  var to = link.getAttribute("passage-name");
-  if (!to) return;  // ignore Next & UI
+    // Ignore structural navigation like "Next"
+    var label = (link.textContent || "").trim();
+    if (label === "Next") return;
 
-  var p = document.querySelector("tw-passage");
-  var from = p ? (p.getAttribute("name") || "") : "";
+    var from = getPassageName();
 
-  log.push(from + "->" + to);
+    // Wait for Twine navigation to complete, then read current passage again
+    setTimeout(function () {
+      var to = getPassageName();
+      if (!to || to === from) return;
 
-  twSetED("tw_last_to", to);
-  twSetED("tw_log", log.join("|"));
-}, true);
+      // Only keep actual decision jumps
+      var isDecision = /^Choice_\d+$/.test(from) && /^Choice_\d+-\d+$/.test(to);
+      if (!isDecision) return;
+
+      var entry = from + "->" + to;
+
+      // Avoid duplicates if click fires twice
+      if (log.length === 0 || log[log.length - 1] !== entry) {
+        log.push(entry);
+        twSetED("tw_last_to", to);
+        twSetED("tw_log", log.join("|"));
+      }
+    }, 50);
+  }, true);
 
 })();
 </script>
