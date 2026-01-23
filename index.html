@@ -3,12 +3,11 @@
 <head>
 <script>
 (function () {
-  // Send key/value to Qualtrics (parent window)
   function twSetED(key, value) {
     try {
       if (window.parent && window.parent !== window) {
         var payload = {};
-        payload[key] = value; // IMPORTANT
+        payload[key] = value;
         window.parent.postMessage(
           { source: "twine", type: "setED", payload: payload },
           "*"
@@ -19,7 +18,7 @@
     }
   }
 
-  // ID per browser session
+  // session ID
   var pid = sessionStorage.getItem("tw_pid");
   if (!pid) {
     pid = String(Math.floor(100000 + Math.random() * 900000));
@@ -28,8 +27,9 @@
   twSetED("tw_pid", pid);
   twSetED("tw_started", "yes");
 
-  // Click log
+  // log only REAL story choices (not Next / UI)
   var log = [];
+
   function getCurrentPassageName() {
     var p = document.querySelector("tw-passage");
     return p ? (p.getAttribute("name") || "") : "";
@@ -39,26 +39,18 @@
     var link = e.target.closest && e.target.closest("tw-link");
     if (!link) return;
 
+    // only log links that go to another passage
+    var to = link.getAttribute("passage-name");
+    if (!to) return;
+
     var from = getCurrentPassageName();
-    var text = (link.textContent || "").trim();
-    var to = link.getAttribute("passage-name") || "";
+    log.push(from + "->" + to);
 
-    log.push({ t: Date.now(), from: from, to: to, text: text });
-
-    twSetED("tw_last_from", from);
     twSetED("tw_last_to", to);
-    twSetED("tw_last_text", text);
-    twSetED("tw_log", JSON.stringify(log));
+    twSetED("tw_log", log.join("|"));
   }, true);
 })();
 </script>
-
-
-
-
-
-
-
   
 <style>
 /* Hide the whole sidebar (includes the undo/redo arrows) */
