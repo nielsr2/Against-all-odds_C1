@@ -35,20 +35,22 @@
     return p ? (p.getAttribute("name") || "") : "";
   }
 
-  document.addEventListener("click", function (e) {
-    var link = e.target.closest && e.target.closest("tw-link");
-    if (!link) return;
+  ddocument.addEventListener("click", function (e) {
+  var link = e.target.closest && e.target.closest("tw-link");
+  if (!link) return;
 
-    // only log links that go to another passage
-    var to = link.getAttribute("passage-name");
-    if (!to) return;
+  var to = link.getAttribute("passage-name");
+  if (!to) return;  // ignore Next & UI
 
-    var from = getCurrentPassageName();
-    log.push(from + "->" + to);
+  var p = document.querySelector("tw-passage");
+  var from = p ? (p.getAttribute("name") || "") : "";
 
-    twSetED("tw_last_to", to);
-    twSetED("tw_log", log.join("|"));
-  }, true);
+  log.push(from + "->" + to);
+
+  twSetED("tw_last_to", to);
+  twSetED("tw_log", log.join("|"));
+}, true);
+
 })();
 </script>
   
