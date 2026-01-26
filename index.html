@@ -3,6 +3,8 @@
 <head>
 <script>
 (function () {
+
+  // Send data to Qualtrics
   function twSetED(key, value) {
     try {
       if (window.parent && window.parent !== window) {
@@ -13,12 +15,10 @@
           "*"
         );
       }
-    } catch (e) {
-      console.log("twSetED error:", e);
-    }
+    } catch (e) {}
   }
 
-  // session id
+  // Session ID
   var pid = sessionStorage.getItem("tw_pid");
   if (!pid) {
     pid = String(Math.floor(100000 + Math.random() * 900000));
@@ -27,42 +27,35 @@
   twSetED("tw_pid", pid);
   twSetED("tw_started", "yes");
 
+  // Store ONLY actual decisions
   var choices = [];
 
   document.addEventListener("click", function (e) {
     var link = e.target.closest && e.target.closest("tw-link");
     if (!link) return;
 
-    // destination passage
     var to = link.getAttribute("passage-name");
     if (!to) return;
 
-    // source passage (the passage containing the clicked link)
     var fromEl = link.closest && link.closest("tw-passage");
     var from = fromEl ? (fromEl.getAttribute("name") || "") : "";
 
-    // only log Choice_X -> Choice_X-1/2
+    // Only Choice_X -> Choice_X-1 / Choice_X-2
     if (!/^Choice_\d+$/.test(from)) return;
     if (!/^Choice_\d+-(1|2)$/.test(to)) return;
 
     var entry = from + "->" + to;
 
-    // avoid duplicates
     if (choices.length === 0 || choices[choices.length - 1] !== entry) {
       choices.push(entry);
       twSetED("tw_last_to", to);
       twSetED("tw_log", choices.join("|"));
     }
   }, true);
+
 })();
 </script>
   
-<style>
-/* Hide the whole sidebar (includes the undo/redo arrows) */
-tw-sidebar {
-  display: none !important;
-}
-</style>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1" name="viewport">
 <title>Against all odds_C1</title>
@@ -81,23 +74,49 @@ tw-sidebar {
 
 [[Next-&gt;Choice_2]]</tw-passagedata><tw-passagedata pid="5" name="C1_1a" tags="" position="1200,600" size="100,100">Some time after, the psychiatrist diagnoses Brian with acute depression and anxiety. He is sent to a psychiatric hospital for treatment.</tw-passagedata><tw-passagedata pid="6" name="Choice_1" tags="" position="575,500" size="100,100">For years, he’d thought about telling his family he wasn’t feeling well, that the anxiety and nightmares were only getting worse. Maybe if he did, he’d feel better, or lighter somehow. But they’re not okay either. His dad’s drinking has gotten worse and his mom barely sleeps.
 
-[[Brian decides to tell his parents what he’s been struggling with. It might finally lead to real help, but it could also stir things up and create tension in the family. Moreover, if they decide he needs to be sent away for treatment, he cannot be there for his brother anymore.-&gt;Choice_1-1]]
+(link: &quot;Brian decides to tell his parents what he’s been struggling with. It might finally lead to real help, but it could also stir things up and create tension in the family. Moreover, if they decide he needs to be sent away for treatment, he cannot be there for his brother anymore.&quot;)[
+  (set: $choice1 to &quot;tell_parents&quot;)
+  (set: $log to $log + (a: &quot;choice1=tell_parents&quot;))
+  (goto: &quot;Choice_1-1&quot;)
+]
 
-[[Brian decides not to tell his parents and keeps his struggles to himself. While life at home may remain stable, his anxiety is likely to worsen without help. However, by keeping it from his parents, he avoids being sent away, allowing him to be there for his brother.-&gt;Choice_1-2]]</tw-passagedata><tw-passagedata pid="7" name="Choice_1-1" tags="" position="325,550" size="100,100">Brian’s parents hear him out. Soon after, his mother takes him to see a psychiatrist — someone finally listens. The truth about Brian’s struggles uncovers what’s been hiding beneath the surface, and soon tension slips into the house. Before long, the cracks start to show, and their family begins to slowly fall apart. 
+(link: &quot;Brian decides not to tell his parents and keeps his struggles to himself. While life at home may remain stable, his anxiety is likely to worsen without help. However, by keeping it from his parents, he avoids being sent away, allowing him to be there for his brother.&quot;)[
+  (set: $choice1 to &quot;dont_tell_parents&quot;)
+  (set: $log to $log + (a: &quot;choice1=dont_tell_parents&quot;))
+  (goto: &quot;Choice_1-2&quot;)
+]
+</tw-passagedata><tw-passagedata pid="7" name="Choice_1-1" tags="" position="325,550" size="100,100">Brian’s parents hear him out. Soon after, his mother takes him to see a psychiatrist — someone finally listens. The truth about Brian’s struggles uncovers what’s been hiding beneath the surface, and soon tension slips into the house. Before long, the cracks start to show, and their family begins to slowly fall apart. 
 
 [[Next-&gt;C1-1a]]</tw-passagedata><tw-passagedata pid="8" name="Choice_1-2" tags="" position="825,550" size="100,100">Things stay calm and Brian keeps his head down, saying nothing about what he’s dealing with. His parents keep drinking, acting like everything is fine. Life moves on, but his anxiety and depression grow heavier beneath the surface.
 
-[[Next-&gt;C1-2a]]</tw-passagedata><tw-passagedata pid="9" name="Choice_2" tags="" position="600,900" size="100,100">[[Brian returns to school. It’s a step toward a safer future, but as long as he’s studying, he’ll still have to rely on his parents and won’t be able to move out which may worsen his struggles with depression and anxiety.-&gt;Choice_2-1]]
+[[Next-&gt;C1-2a]]</tw-passagedata><tw-passagedata pid="9" name="Choice_2" tags="" position="600,900" size="100,100">(link: &quot;Brian returns to school. It’s a step toward a safer future, but as long as he’s studying, he’ll still have to rely on his parents and won’t be able to move out which may worsen his struggles with depression and anxiety.&quot;)[
+  (set: $choice2 to &quot;return_school&quot;)
+  (set: $log to $log + (a: &quot;choice2=return_school&quot;))
+  (goto: &quot;Choice_2-1&quot;)
+]
 
-[[Brian starts looking for a job. It’s a step toward short-term stability; he’ll be able to move out and stop relying on his parents. While this may ease his struggles with depression and anxiety, he may also risk having fewer opportunities in the future.-&gt;Choice_2-2]]</tw-passagedata><tw-passagedata pid="10" name="Choice_2-1" tags="" position="400,1050" size="100,100">Brian decides to finish his education. After completing it, Brian secures a well-paying job as a firefighter. Even though living at home with his family while managing anxiety and depression is challenging, he’s finally able to do work he truly loves. 
+(link: &quot;Brian starts looking for a job. It’s a step toward short-term stability; he’ll be able to move out and stop relying on his parents. While this may ease his struggles with depression and anxiety, he may also risk having fewer opportunities in the future.&quot;)[
+  (set: $choice2 to &quot;look_for_job&quot;)
+  (set: $log to $log + (a: &quot;choice2=look_for_job&quot;))
+  (goto: &quot;Choice_2-2&quot;)
+]
+</tw-passagedata><tw-passagedata pid="10" name="Choice_2-1" tags="" position="400,1050" size="100,100">Brian decides to finish his education. After completing it, Brian secures a well-paying job as a firefighter. Even though living at home with his family while managing anxiety and depression is challenging, he’s finally able to do work he truly loves. 
 
 [[Next-&gt;Merge_1]]</tw-passagedata><tw-passagedata pid="11" name="Choice_2-2" tags="" position="800,1050" size="100,100">Brian is determined to find work. He soon secures a position at the local fire station as an equipment assistant. After moving out of his parents’ home, his anxiety and depression improve significantly. He’s doing so well that he’s given the chance to take evening courses to move into active firefighting work. 
 
 [[Next-&gt;Merge_1]]</tw-passagedata><tw-passagedata pid="12" name="Choice_3" tags="" position="625,1700" size="100,100">The days no longer start fresh. Instead, they bleed into one another, stretching on without clear edges. The arguments with his wife grow heavier, and before long their once beautiful marriage falls apart. Brian is forced to move out of the home they built together, leaving his children behind and taking only what he can carry.
 
-[[Brian rents a small apartment for himself. It strains his budget, and he may struggle to afford food and bills, but for now it feels better to be on his own than to return to the questions, grief, and tension at his parents’ house. -&gt;Choice_3-1]]
+(link: &quot;Brian rents a small apartment for himself. It strains his budget, and he may struggle to afford food and bills, but for now it feels better to be on his own than to return to the questions, grief, and tension at his parents’ house.&quot;)[
+  (set: $choice3 to &quot;rent_apartment&quot;)
+  (set: $log to $log + (a: &quot;choice3=rent_apartment&quot;))
+  (goto: &quot;Choice_3-1&quot;)
+]
 
-[[Brian moves back in with his parents. Grief still hangs in the house, and the tension never quite leaves, but at least there he isn’t completely alone. Not having to pay rent eases his mind, and for now he can afford food and get by a little more comfortably.-&gt;Choice_3-2]]</tw-passagedata><tw-passagedata pid="13" name="Choice_3-1" tags="" position="275,1850" size="100,100">(if: (history: where its name contains &quot;Choice_2-1&quot;)&#39;s length is 1)[
+(link: &quot;Brian moves back in with his parents. Grief still hangs in the house, and the tension never quite leaves, but at least there he isn’t completely alone. Not having to pay rent eases his mind, and for now he can afford food and get by a little more comfortably.&quot;)[
+  (set: $choice3 to &quot;move_back_parents&quot;)
+  (set: $log to $log + (a: &quot;choice3=move_back_parents&quot;))
+  (goto: &quot;Choice_3-2&quot;)
+]</tw-passagedata><tw-passagedata pid="13" name="Choice_3-1" tags="" position="275,1850" size="100,100">(if: (history: where its name contains &quot;Choice_2-1&quot;)&#39;s length is 1)[
 With a complete education and a steady income, Brian can afford an apartment from his savings for now. But with child support payments added to the strain, he knows it’s not a solution that will last.
 ]
 
@@ -113,15 +132,25 @@ Brian stays with his parents for a while, but the depression and anxiety soon re
 Brian stays with his parents for a while, but the depression and anxiety soon return. With an incomplete education and unsteady income, Brian also needs to worry about the financial burden of child support. Nevertheless, he knows that living with his parents is not a long-term solution.
 ]
  
- [[Next-&gt;Merge-4-0]]</tw-passagedata><tw-passagedata pid="15" name="Choice_4" tags="" position="600,2400" size="100,100">[[Admitting he’s homeless is one thing; putting it on paper is another. Brian walks into the housing office and adds his name to the list. He isn’t ready to talk about his situation or sleep in a shelter yet, but writing his name down gives him a quiet sense of moving forward.-&gt;Choice_4-1]]
+ [[Next-&gt;Merge-4-0]]</tw-passagedata><tw-passagedata pid="15" name="Choice_4" tags="" position="600,2400" size="100,100">(link: &quot;Admitting he’s homeless is one thing; putting it on paper is another. Brian walks into the housing office and adds his name to the list. He isn’t ready to talk about his situation or sleep in a shelter yet, but writing his name down gives him a quiet sense of moving forward.&quot;)[
+  (set: $choice4 to &quot;housing_list&quot;)
+  (set: $log to $log + (a: &quot;choice4=housing_list&quot;))
+  (goto: &quot;Choice_4-1&quot;)
+]
 
-[[The thought of forms and waiting lists feels heavy right now. Instead, Brian heads to a community-run center, where he can talk things through first, meet people who might understand, and find a safe place to sleep for the night. -&gt;Choice_4-2]]</tw-passagedata><tw-passagedata pid="16" name="Choice_4-1" tags="" position="350,2525" size="100,100">After months of waiting to hear from the housing office, Brian gets a call. He’s still not fully himself, still battling the anxiety and the depression but this time there’s good news — the housing office has found him a place.
+(link: &quot;The thought of forms and waiting lists feels heavy right now. Instead, Brian heads to a community-run center, where he can talk things through first, meet people who might understand, and find a safe place to sleep for the night.&quot;)[
+  (set: $choice4 to &quot;community_center&quot;)
+  (set: $log to $log + (a: &quot;choice4=community_center&quot;))
+  (goto: &quot;Choice_4-2&quot;)
+]</tw-passagedata><tw-passagedata pid="16" name="Choice_4-1" tags="" position="350,2525" size="100,100">After months of waiting to hear from the housing office, Brian gets a call. He’s still not fully himself, still battling the anxiety and the depression but this time there’s good news — the housing office has found him a place.
 
 [[Next-&gt;Merge8]]</tw-passagedata><tw-passagedata pid="17" name="Choice_4-2" tags="" position="825,2525" size="100,100">After months of going to the community center, Brian gets a call. He’s still not fully himself, still battling the anxiety and the depression but this time there’s good news — one of the volunteers from the center offers him a small flat at the edge of town.
 
 [[Next-&gt;Merge8]]</tw-passagedata><tw-passagedata pid="18" name="Incident" tags="" position="600,1375" size="100,100">His brother has been in a terrible accident. He didn’t make it. 
 
-[[Next-&gt;Pre-choice_1]]</tw-passagedata><tw-passagedata pid="19" name="Intro 0" tags="" position="575,0" size="100,100">&#39;&#39;Welcome!&#39;&#39;
+[[Next-&gt;Pre-choice_1]]</tw-passagedata><tw-passagedata pid="19" name="Intro 0" tags="" position="575,0" size="100,100">(set: $log to (a:))
+
+&#39;&#39;Welcome!&#39;&#39;
 
 You are about to read a story about a man named Brian. As you read, you will be presented with choices shown in blue text. Please read carefully and choose the option that feels most natural to you. 
 
