@@ -2,28 +2,20 @@
 <html>
 <head>
 <script id="twine-user-script" type="text/twine-javascript">
-/**
- * Sends Choice_1..Choice_4 selections to the parent Qualtrics page via postMessage.
- * Expects destination passages named like: Choice_1-1, Choice_1-2, ... Choice_4-2
- */
 (function () {
   function sendChoice(dest) {
     var m = /^Choice_(\d+)-(\d+)$/.exec(dest);
     if (!m) return;
 
-    var payload = {
+    window.parent.postMessage({
       type: "twine_choice",
       choiceNum: Number(m[1]),   // 1..4
       optionNum: Number(m[2]),   // 1..2
       dest: dest,
       ts: new Date().toISOString()
-    };
-
-    // parent is Qualtrics; message can cross origins
-    window.parent.postMessage(payload, "*");
+    }, "*");
   }
 
-  // Capture clicks on Harlowe links
   document.addEventListener("click", function (e) {
     var t = e.target;
     if (!t || !t.closest) return;
@@ -31,19 +23,21 @@
     var twLink = t.closest("tw-link");
     if (!twLink) return;
 
-    // Harlowe stores destination on nearest tw-expression as data("linkPassageName")
     var expr = twLink.closest("tw-expression");
     if (!expr) return;
 
     var dest = null;
 
-    // Prefer jQuery data store if present (Harlowe bundles jQuery)
+    // Best effort: Harlowe bundles jQuery, this usually works
     try {
       if (window.jQuery) dest = window.jQuery(expr).data("linkPassageName");
     } catch (err) {}
 
     // Fallbacks
-    dest = dest || (expr.dataset && expr.dataset.linkPassageName) || expr.getAttribute("data-link-passagename") || expr.linkPassageName;
+    dest = dest ||
+      (expr.dataset && expr.dataset.linkPassageName) ||
+      expr.getAttribute("data-link-passagename") ||
+      expr.linkPassageName;
 
     if (dest) sendChoice(dest);
   }, true);
