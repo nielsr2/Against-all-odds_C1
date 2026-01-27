@@ -1,54 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script id="twine-user-script" type="text/twine-javascript">
-(function () {
-
-  function sendChoice(dest) {
-    // We only care about real choices
-    // dest must be like "Choice_1-1"
-    if (!/^Choice_\d+-\d+$/.test(dest)) return;
-
-    window.parent.postMessage({
-      type: "twine_choice",
-      dest: dest,                // e.g. "Choice_2-1"
-      ts: new Date().toISOString()
-    }, "*");
-  }
-
-  document.addEventListener("click", function (e) {
-    var t = e.target;
-    if (!t || !t.closest) return;
-
-    // Harlowe renders choices as <tw-link>
-    var twLink = t.closest("tw-link");
-    if (!twLink) return;
-
-    // Destination passage name is stored on the enclosing <tw-expression>
-    var expr = twLink.closest("tw-expression");
-    if (!expr) return;
-
-    var dest = null;
-
-    // Preferred: Harlowe's jQuery data store
-    try {
-      if (window.jQuery) {
-        dest = window.jQuery(expr).data("linkPassageName");
-      }
-    } catch (e) {}
-
-    // Fallbacks
-    dest = dest ||
-           (expr.dataset && expr.dataset.linkPassageName) ||
-           expr.getAttribute("data-link-passagename") ||
-           expr.linkPassageName;
-
-    if (dest) sendChoice(dest);
-
-  }, true);
-
-})();
-</script>
  <style>
 /* Hide the whole sidebar (includes the undo/redo arrows) */
 tw-sidebar {
@@ -77,10 +29,16 @@ tw-sidebar {
 [[Next-&gt;C1-2b]]</tw-passagedata><tw-passagedata pid="4" name="C1-2b" tags="" position="825,875" size="100,100">For a year, Brian is living with his parents, keeping quiet about his struggles, “I have to stay strong for my brother” he says to himself. But his silence comes with its own cost. Dealing with depression and anxiety has made Brian fall behind in school and he hasn’t been able to save any money for moving out.
 
 [[Next-&gt;Choice_2]]</tw-passagedata><tw-passagedata pid="5" name="C1_1a" tags="" position="1200,600" size="100,100">Some time after, the psychiatrist diagnoses Brian with acute depression and anxiety. He is sent to a psychiatric hospital for treatment.</tw-passagedata><tw-passagedata pid="6" name="Choice_1" tags="" position="575,500" size="100,100">For years, he’d thought about telling his family he wasn’t feeling well, that the anxiety and nightmares were only getting worse. Maybe if he did, he’d feel better, or lighter somehow. But they’re not okay either. His dad’s drinking has gotten worse and his mom barely sleeps.
-
-[[Brian decides to tell his parents what he’s been struggling with. It might finally lead to real help, but it could also stir things up and create tension in the family. Moreover, if they decide he needs to be sent away for treatment, he cannot be there for his brother anymore.-&gt;Choice_1-1]]
-
-[[Brian decides not to tell his parents and keeps his struggles to himself. While life at home may remain stable, his anxiety is likely to worsen without help. However, by keeping it from his parents, he avoids being sent away, allowing him to be there for his brother.-&gt;Choice_1-2]]</tw-passagedata><tw-passagedata pid="7" name="Choice_1-1" tags="" position="325,550" size="100,100">Brian’s parents hear him out. Soon after, his mother takes him to see a psychiatrist — someone finally listens. The truth about Brian’s struggles uncovers what’s been hiding beneath the surface, and soon tension slips into the house. Before long, the cracks start to show, and their family begins to slowly fall apart. 
+   (link: "item-a")[
+     (set: $selectedItem to "item-a")
+     (go-to: "Choice_1-1")
+   ]
+   
+   (link: "item-b")[
+     (set: $selectedItem to "item-b")
+     (go-to: "Choice_1-2")
+   ]
+</tw-passagedata><tw-passagedata pid="7" name="Choice_1-1" tags="" position="325,550" size="100,100">Brian’s parents hear him out. Soon after, his mother takes him to see a psychiatrist — someone finally listens. The truth about Brian’s struggles uncovers what’s been hiding beneath the surface, and soon tension slips into the house. Before long, the cracks start to show, and their family begins to slowly fall apart. 
 
 [[Next-&gt;C1-1a]]</tw-passagedata><tw-passagedata pid="8" name="Choice_1-2" tags="" position="825,550" size="100,100">Things stay calm and Brian keeps his head down, saying nothing about what he’s dealing with. His parents keep drinking, acting like everything is fine. Life moves on, but his anxiety and depression grow heavier beneath the surface.
 
