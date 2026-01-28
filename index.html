@@ -1,54 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script id="twine-user-script" type="text/twine-javascript">
-(function () {
-
-  function sendChoice(dest) {
-    // We only care about real choices
-    // dest must be like "Choice_1-1"
-    if (!/^Choice_\d+-\d+$/.test(dest)) return;
-
-    window.parent.postMessage({
-      type: "twine_choice",
-      dest: dest,                // e.g. "Choice_2-1"
-      ts: new Date().toISOString()
-    }, "*");
-  }
-
-  document.addEventListener("click", function (e) {
-    var t = e.target;
-    if (!t || !t.closest) return;
-
-    // Harlowe renders choices as <tw-link>
-    var twLink = t.closest("tw-link");
-    if (!twLink) return;
-
-    // Destination passage name is stored on the enclosing <tw-expression>
-    var expr = twLink.closest("tw-expression");
-    if (!expr) return;
-
-    var dest = null;
-
-    // Preferred: Harlowe's jQuery data store
-    try {
-      if (window.jQuery) {
-        dest = window.jQuery(expr).data("linkPassageName");
-      }
-    } catch (e) {}
-
-    // Fallbacks
-    dest = dest ||
-           (expr.dataset && expr.dataset.linkPassageName) ||
-           expr.getAttribute("data-link-passagename") ||
-           expr.linkPassageName;
-
-    if (dest) sendChoice(dest);
-
-  }, true);
-
-})();
-</script>
  <style>
 /* Hide the whole sidebar (includes the undo/redo arrows) */
 tw-sidebar {
