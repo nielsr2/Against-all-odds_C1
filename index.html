@@ -139,38 +139,543 @@ He imagines his kids here, their voices in the rooms, and his throat tightens. �
 He pauses. “But having a place… after everything — it gives you hope that things might be okay again. Even against all odds, there is hope.”
 
 [[Click to end the story-&gt;Merge12]]</tw-passagedata><tw-passagedata pid="37" name="Merge12" tags="" position="600,3025" size="100,100"></tw-passagedata><tw-passagedata pid="38" name="Tracking" tags="" position="575,0" size="100,100">header
-&lt;script&gt; window.addEventListener(&#39;load&#39;, function() { // Wait for content to be ready setTimeout(function() { var links = document.querySelectorAll(&#39;tw-link&#39;); links.forEach(function(link) { link.addEventListener(&#39;click&#39;, function() { var linkText = this.textContent.trim(); console.log(&quot;User clicked: &quot; + linkText); // Send message to parent window (Qualtrics)if (window.parent) { window.parent.postMessage({ type: &#39;twine-click&#39;, choice: linkText }, &#39;*&#39;); } }); }); }, 500); });&lt;/script&gt;
+&lt;script&gt; window.addEventListener(&#39;load&#39;, function() { // Wait for content to be ready setTimeout(function() { var links = document.querySelectorAll(&#39;tw-link&#39;); links.forEach(function(link) { link.addEventListener(&#39;click&#39;, function() { var linkText = this.textContent.trim(); console.log(&quot;User clicked: &quot; + linkText); // Send message to parent window (Qualtrics)if (window.parent) { var passage = link.getAttribute(&#39;passage-name&#39;) || link.getAttribute(&#39;data-passage&#39;) || null; var payload = { type: &#39;twine-click&#39;, choice: linkText, passage: passage, time: new Date().toISOString() }; window.parent.postMessage(payload, &#39;*&#39;); } }); }); }, 500); });&lt;/script&gt;
 
 
 
 </tw-passagedata>
 <script>
+/*
+================================================================================
+                    TWINE CLICK TRACKER - A PLAIN ENGLISH GUIDE
+================================================================================
+
+WHAT IS THIS FILE?
+------------------
+This is a Twine story - an interactive narrative where readers make choices.
+Twine creates a single HTML file that contains:
+  • The story text (all passages/chapters)
+  • The Twine engine (the code that makes the story work)
+  • Custom tracking code (this script - added to record user choices)
+
+WHY DO WE NEED THIS TRACKING CODE?
+-----------------------------------
+When this story is embedded in a survey (like Qualtrics), researchers want to
+know which choices users make. This script "listens" for clicks and sends that
+information to the survey platform.
+
+HOW DOES THE INTERNET/WEB PAGES WORK (SIMPLIFIED)?
+---------------------------------------------------
+Think of a web page like a document with invisible workers:
+  • HTML = The content (text, images, structure)
+  • CSS = The styling (colors, fonts, layout)  
+  • JavaScript = The behavior (what happens when you click things)
+
+This tracking code is JavaScript - it's the "behavior" part that reacts when
+users click on story choices.
+
+WHAT IS AN "IFRAME"?
+--------------------
+An iframe is like a picture frame for websites. It lets you put one webpage
+inside another. When this Twine story runs inside Qualtrics, it's displayed
+in an iframe. The Qualtrics page is the "parent" and this story is the "child".
+
+To send information from the child (story) to the parent (Qualtrics), we use
+something called "postMessage" - it's like passing notes between the windows.
+
+================================================================================
+                            THE ACTUAL CODE BEGINS HERE
+================================================================================
+*/
+
+/**
+ * ===========================================================================
+ * TWINE CLICK TRACKER SCRIPT
+ * ===========================================================================
+ * 
+ * PURPOSE:
+ * This script tracks every time a user clicks on a story choice (those blue
+ * text links in the story) and:
+ *   1. Logs it to the browser console (for testing)
+ *   2. Sends it to Qualtrics (when embedded in a survey)
+ *   3. Stores it locally (for debugging)
+ * 
+ * WHEN IS THIS CODE RUN?
+ * Immediately when the page loads. The "(function() { ... })()" pattern
+ * means "create this function and run it right now".
+ * 
+ * WHY IS IT WRAPPED IN (function() { ... })()?
+ * This is called an "IIFE" (Immediately Invoked Function Expression).
+ * It's like putting code in a sealed box - variables created inside can't
+ * accidentally interfere with other code on the page. Think of it as a
+ * private workspace.
+ * 
+ * ===========================================================================
+ * DEBUG/TESTING TOOLS (for researchers and developers)
+ * ===========================================================================
+ * 
+ * To test this script, open your browser's Developer Tools (usually F12),
+ * go to the Console tab, and type these commands:
+ * 
+ *   window.twineTracker.enableDebug()   → Turn on detailed logging
+ *   window.twineTracker.getHistory()    → See all clicks made so far
+ *   window.twineTracker.getStatus()     → Check if tracking is working
+ *   window.twineTracker.clearHistory()  → Reset the click record
+ * 
+ */
 (function() {
-    console.log("Twine click tracker initializing...");
+
+    // ========================================================================
+    // SECTION 1: DEBUG CONFIGURATION
+    // ========================================================================
+    // "Debug mode" means showing extra information in the console.
+    // It's like turning on a "verbose" or "detailed" mode for troubleshooting.
+    // By default, it's OFF so the console isn't cluttered.
+    // ========================================================================
     
-    // Use event delegation - listen on document, not individual links
-    document.addEventListener('click', function(event) {
-        // Check if the clicked element is or is inside a tw-link
-        var twLink = event.target.closest('tw-link');
-        
-        if (twLink) {
-            var linkText = twLink.textContent.trim();
-            console.log("USER CLICKED: " + linkText);
-            
-            // Send message to parent window (Qualtrics)
-            if (window.parent && window.parent !== window) {
-                console.log("Sending to parent window");
-                window.parent.postMessage({
-                    type: 'twine-click',
-                    choice: linkText
-                }, '*');
+    /**
+     * DEBUG FLAG
+     * ----------
+     * This is a simple on/off switch (true/false) for extra logging.
+     * 
+     * "var" creates a variable - a named container for storing data.
+     * "window.TWINE_DEBUG" checks if someone already set this value.
+     * "|| false" means "if nothing was set, use false (off)".
+     * 
+     * To turn on debug mode from the browser console, type:
+     *   window.TWINE_DEBUG = true
+     */
+    var DEBUG = window.TWINE_DEBUG || false;
+    
+    /**
+     * CLICK HISTORY
+     * -------------
+     * This is an "array" (a list) that stores every click the user makes.
+     * 
+     * "[]" means an empty list - we start with nothing recorded.
+     * Each time the user clicks a choice, we add an entry to this list.
+     * 
+     * Think of it like a guest book that records everyone who visited.
+     */
+    var clickHistory = [];
+    
+    /**
+     * DEBUG LOGGER FUNCTION
+     * ---------------------
+     * A "function" is a reusable piece of code, like a recipe.
+     * You give it a name ("debugLog") and call it whenever you need it.
+     * 
+     * This function only prints messages when DEBUG mode is on.
+     * 
+     * Parameters (inputs):
+     *   - message: The text to display
+     *   - data: (optional) Extra information to display
+     * 
+     * "console.log" prints text to the browser's Console panel.
+     * The "[TwineTracker DEBUG]" prefix makes our messages easy to find.
+     */
+    function debugLog(message, data) {
+        // "if" checks a condition - only runs the code inside { } if true
+        if (DEBUG || window.TWINE_DEBUG) {
+            // "!== undefined" means "if data was provided"
+            if (data !== undefined) {
+                console.log("[TwineTracker DEBUG] " + message, data);
             } else {
-                console.log("No parent window - running standalone");
+                console.log("[TwineTracker DEBUG] " + message);
             }
         }
-    }, true); // 'true' = capture phase, catches events early
+    }
     
+    /**
+     * ERROR LOGGER FUNCTION
+     * ---------------------
+     * Similar to debugLog, but for errors.
+     * 
+     * "console.error" makes the message appear in red - for serious problems.
+     * Unlike debugLog, this ALWAYS prints (even when debug mode is off),
+     * because errors are important to see.
+     */
+    function errorLog(message, error) {
+        console.error("[TwineTracker ERROR] " + message, error || "");
+    }
+    
+    // ========================================================================
+    // SECTION 2: INITIALIZATION (STARTING UP)
+    // ========================================================================
+    // When the script first runs, it announces itself in the console and
+    // records some information about the environment it's running in.
+    // ========================================================================
+    
+    // Print a welcome message so developers know the tracker loaded
+    console.log("Twine click tracker initializing...");
+    
+    // Print debug info about the current settings
+    debugLog("Debug mode: " + (DEBUG ? "ENABLED" : "DISABLED (set window.TWINE_DEBUG = true to enable)"));
+    
+    // Check if we're inside an iframe (embedded in another page like Qualtrics)
+    // "window.parent !== window" is true when we're in an iframe
+    debugLog("Running in iframe: " + (window.parent !== window));
+    
+    // Show the page's loading state
+    debugLog("Document ready state: " + document.readyState);
+    
+    // ========================================================================
+    // SECTION 3: CLICK DETECTION (THE MAIN EVENT LISTENER)
+    // ========================================================================
+    // 
+    // This is the heart of the tracker. It "listens" for clicks and reacts
+    // when the user clicks on a story choice.
+    //
+    // KEY CONCEPTS EXPLAINED:
+    // -----------------------
+    // 
+    // EVENT:
+    //   When something happens on a webpage (click, scroll, key press),
+    //   the browser creates an "event" - a packet of information about
+    //   what happened, where, and when.
+    //
+    // EVENT LISTENER:
+    //   Code that says "when this type of event happens, run this function."
+    //   It's like setting up a motion sensor that triggers an alarm.
+    //
+    // EVENT DELEGATION:
+    //   Instead of putting a sensor on every door, put one main sensor
+    //   in the hallway and check which room the motion came from.
+    //   That's what we do here - listen on the whole "document" and check
+    //   if the click was on a story choice.
+    //
+    // TW-LINK:
+    //   This is a custom HTML element that Twine creates for clickable
+    //   story choices. They appear as blue text in the story.
+    //
+    // ========================================================================
+    
+    /**
+     * MAIN CLICK HANDLER
+     * ------------------
+     * "document.addEventListener" tells the browser:
+     *   "Whenever a 'click' happens ANYWHERE on the page, run this function."
+     * 
+     * The "function(event)" part is an anonymous function - a function without
+     * a name that we're creating just for this purpose.
+     * 
+     * "event" is the information packet the browser gives us about the click.
+     * It contains things like:
+     *   - event.target: What element was actually clicked
+     *   - event.clientX/Y: Where on the screen the click happened
+     *   - Methods like event.stopPropagation(): Ways to control the event
+     */
+    document.addEventListener('click', function(event) {
+        
+        /**
+         * TRY/CATCH BLOCK
+         * ---------------
+         * "try" means "attempt to run this code"
+         * "catch" means "if something goes wrong, run this instead"
+         * 
+         * This prevents our tracker from crashing the whole story if
+         * something unexpected happens. The story will keep working
+         * even if tracking fails.
+         */
+        try {
+            // Log what element was clicked (for debugging)
+            // "event.target.tagName" tells us what type of element (DIV, P, TW-LINK, etc.)
+            debugLog("Click detected on element:", event.target.tagName);
+            
+            /**
+             * FIND THE STORY CHOICE
+             * ---------------------
+             * "event.target" is the exact element that was clicked.
+             * ".closest('tw-link')" searches upward through parent elements
+             * to find a tw-link. This is important because sometimes users
+             * click on text inside the link, not the link itself.
+             * 
+             * Example: If the HTML is:
+             *   <tw-link><span>Click here</span></tw-link>
+             * 
+             * And the user clicks the word "here", event.target is the <span>,
+             * but .closest('tw-link') finds the parent <tw-link>.
+             */
+            var twLink = event.target.closest('tw-link');
+            
+            // Only continue if we found a story choice (tw-link)
+            // "if (twLink)" is true when twLink exists (is not null/undefined)
+            if (twLink) {
+                debugLog("tw-link element found:", twLink);
+                
+                /**
+                 * GET THE CHOICE TEXT
+                 * -------------------
+                 * ".textContent" gets all the text inside an element.
+                 * ".trim()" removes extra spaces from the beginning and end.
+                 * 
+                 * For example, if the link is:
+                 *   <tw-link>  Go to the forest  </tw-link>
+                 * 
+                 * linkText would be "Go to the forest" (without the extra spaces)
+                 */
+                var linkText = twLink.textContent.trim();
+                
+                // Always log the click (even without debug mode)
+                // This is the main output researchers look for in the console
+                console.log("USER CLICKED: " + linkText);
+                
+                /**
+                 * GET THE TARGET PASSAGE (optional info)
+                 * --------------------------------------
+                 * ".getAttribute()" gets the value of an HTML attribute.
+                 * Twine might store the destination passage name in attributes.
+                 * 
+                 * The "||" (or) operator tries multiple options:
+                 *   1. First try 'passage-name'
+                 *   2. If that doesn't exist, try 'data-passage'
+                 *   3. If neither exists, use null (nothing)
+                 */
+                var passage = twLink.getAttribute('passage-name') || twLink.getAttribute('data-passage') || null;
+                debugLog("Target passage attribute:", passage);
+                
+                /**
+                 * CREATE THE DATA PACKAGE (PAYLOAD)
+                 * ----------------------------------
+                 * This "object" (a collection of named values) contains all
+                 * the information we want to send to Qualtrics.
+                 * 
+                 * Think of it like filling out a form:
+                 *   - type: What kind of message is this? ('twine-click')
+                 *   - choice: What text did the user click?
+                 *   - passage: Where does this link lead?
+                 *   - time: When exactly did this happen? (ISO format timestamp)
+                 *   - clickIndex: Is this the 1st, 2nd, 3rd click, etc.?
+                 * 
+                 * "new Date().toISOString()" creates a standardized timestamp
+                 * like "2026-02-07T14:30:00.000Z" that works everywhere.
+                 */
+                var payload = { 
+                    type: 'twine-click', 
+                    choice: linkText, 
+                    passage: passage, 
+                    time: new Date().toISOString(),
+                    clickIndex: clickHistory.length + 1
+                };
+                
+                /**
+                 * SAVE TO LOCAL HISTORY
+                 * ---------------------
+                 * ".push()" adds a new item to the end of an array (list).
+                 * This stores the click locally so we can review it later
+                 * using window.twineTracker.getHistory()
+                 */
+                clickHistory.push(payload);
+                debugLog("Payload created:", payload);
+                debugLog("Total clicks recorded: " + clickHistory.length);
+                
+                /**
+                 * SEND TO QUALTRICS (PARENT WINDOW COMMUNICATION)
+                 * ------------------------------------------------
+                 * This is where we send the click data to Qualtrics.
+                 * 
+                 * CONCEPT: PARENT VS CHILD WINDOWS
+                 * When a webpage is displayed inside an iframe:
+                 *   - The outer page (Qualtrics) is the "parent" window
+                 *   - The inner page (this Twine story) is the "child" window
+                 *   - window.parent refers to the outer Qualtrics page
+                 *   - window refers to this current page
+                 * 
+                 * If we're NOT in an iframe (running standalone):
+                 *   - window.parent === window (they're the same)
+                 * 
+                 * POSTMESSAGE API:
+                 * This is a secure way for iframes to talk to their parent.
+                 * .postMessage(data, targetOrigin) sends a message.
+                 * The '*' means "send to any domain" - less secure but simpler.
+                 */
+                if (window.parent && window.parent !== window) {
+                    // We ARE inside an iframe (like in Qualtrics)
+                    console.log("Sending to parent window");
+                    debugLog("Posting message to parent with payload:", payload);
+                    
+                    // Nested try/catch for the postMessage specifically
+                    try {
+                        // Send the data to the parent window
+                        window.parent.postMessage(payload, '*');
+                        debugLog("postMessage sent successfully");
+                    } catch (postError) {
+                        // Something went wrong with sending (rare, but possible)
+                        errorLog("Failed to send postMessage to parent:", postError);
+                    }
+                } else {
+                    // We are NOT in an iframe (running directly in browser)
+                    console.log("No parent window - running standalone");
+                    debugLog("Standalone mode - no postMessage sent");
+                }
+            } else {
+                // The click was somewhere else on the page (not a story choice)
+                debugLog("Click was not on a tw-link element");
+            }
+        } catch (err) {
+            // Something unexpected went wrong - log it but don't crash
+            errorLog("Unexpected error in click handler:", err);
+        }
+        
+    /**
+     * THE THIRD PARAMETER: "true" (CAPTURE PHASE)
+     * -------------------------------------------
+     * Events in browsers travel in two phases:
+     *   1. CAPTURE: From the window DOWN to the clicked element
+     *   2. BUBBLE: From the clicked element UP to the window
+     * 
+     * By using "true", we catch events during capture (phase 1).
+     * This means we see the click BEFORE it reaches the tw-link,
+     * which can be useful if other code might block the event.
+     * 
+     * Most click handlers use "false" (or omit this parameter),
+     * which listens during the bubble phase instead.
+     */
+    }, true);
+    
+    // ========================================================================
+    // SECTION 4: PUBLIC DEBUG API (TESTING TOOLS)
+    // ========================================================================
+    // These are tools that researchers and developers can use from the
+    // browser console to check if tracking is working correctly.
+    //
+    // WHAT IS "window.twineTracker"?
+    // "window" is the global namespace - it's like a bulletin board where
+    // different scripts can leave information for each other.
+    // 
+    // By attaching "twineTracker" to "window", we make these tools
+    // available to anyone who opens the browser console.
+    // ========================================================================
+    
+    /**
+     * PUBLIC API OBJECT
+     * -----------------
+     * An "object" in JavaScript is a collection of named values.
+     * This object contains functions (methods) that can be called
+     * from the browser console.
+     * 
+     * USAGE EXAMPLES (type these in the browser console):
+     * 
+     *   // See what choices the user has made:
+     *   window.twineTracker.getHistory()
+     *   
+     *   // Turn on detailed logging:
+     *   window.twineTracker.enableDebug()
+     *   
+     *   // Check if everything is working:
+     *   window.twineTracker.getStatus()
+     */
+    window.twineTracker = {
+        
+        /**
+         * getHistory()
+         * ------------
+         * Returns a list of all clicks recorded during this session.
+         * Also displays them in a nice table format in the console.
+         * 
+         * "console.table()" shows arrays/objects as readable tables.
+         */
+        getHistory: function() {
+            console.log("[TwineTracker] Click history (" + clickHistory.length + " clicks):");
+            console.table(clickHistory);  // Pretty table view
+            return clickHistory;          // Also return the raw data
+        },
+        
+        /**
+         * clearHistory()
+         * --------------
+         * Erases all recorded clicks. Useful when testing.
+         * 
+         * "clickHistory = []" replaces the list with an empty one.
+         */
+        clearHistory: function() {
+            var count = clickHistory.length;  // Remember how many we're deleting
+            clickHistory = [];                 // Replace with empty list
+            console.log("[TwineTracker] Cleared " + count + " clicks from history");
+        },
+        
+        /**
+         * enableDebug()
+         * -------------
+         * Turns on verbose logging mode.
+         * After calling this, you'll see much more information in the console.
+         */
+        enableDebug: function() {
+            window.TWINE_DEBUG = true;  // Set the global flag to true
+            console.log("[TwineTracker] Debug mode ENABLED");
+        },
+        
+        /**
+         * disableDebug()
+         * --------------
+         * Turns off verbose logging mode.
+         * The console will be less cluttered.
+         */
+        disableDebug: function() {
+            window.TWINE_DEBUG = false;
+            console.log("[TwineTracker] Debug mode DISABLED");
+        },
+        
+        /**
+         * getStatus()
+         * -----------
+         * Shows a summary of the current tracker configuration.
+         * Helpful for diagnosing issues.
+         * 
+         * "document.querySelectorAll('tw-link').length" counts how many
+         * story choice links are currently visible on the page.
+         * 
+         * The "? :" is a "ternary operator" - a compact if/else:
+         *   condition ? valueIfTrue : valueIfFalse
+         */
+        getStatus: function() {
+            var status = {
+                // Is debug mode on or off?
+                debugMode: !!window.TWINE_DEBUG,  // !! converts to true/false
+                
+                // Are we embedded in Qualtrics (or running standalone)?
+                isInIframe: window.parent !== window,
+                
+                // How many clicks have been recorded?
+                clickCount: clickHistory.length,
+                
+                // Is the page fully loaded?
+                documentReady: document.readyState,
+                
+                // How many clickable story links are on the current passage?
+                twLinksOnPage: document.querySelectorAll('tw-link').length,
+                
+                // What's the name of this Twine story?
+                // (Found in the tw-storydata element's "name" attribute)
+                storyName: document.querySelector('tw-storydata') ? 
+                           document.querySelector('tw-storydata').getAttribute('name') : 'Unknown'
+            };
+            console.log("[TwineTracker] Current status:");
+            console.table(status);  // Display as a table
+            return status;          // Also return the object
+        }
+    };
+    
+    // ========================================================================
+    // SECTION 5: INITIALIZATION COMPLETE
+    // ========================================================================
+    // Final messages to confirm everything started up correctly.
+    // ========================================================================
+    
+    // Announce that the tracker is ready
     console.log("Twine click tracker ready!");
+    
+    // Tell developers (in debug mode) how to access the testing tools
+    debugLog("Public API available at window.twineTracker");
+    debugLog("Run window.twineTracker.getStatus() for current status");
+
+/*
+ * End of the IIFE (Immediately Invoked Function Expression)
+ * The "})();" closes the function and immediately runs it.
+ * 
+ * The "()" at the end is what actually CALLS the function.
+ * Without it, we'd just be defining a function but never running it.
+ */
 })();
 </script></tw-storydata>
 <script title="Twine engine code" data-main="harlowe">(function(){"use strict";
