@@ -418,7 +418,10 @@ something called "postMessage" - it's like passing notes between the windows.
                 
                 // Always log the click (even without debug mode)
                 // This is the main output researchers look for in the console
-                console.log("USER CLICKED: " + linkText);
+                // console.log("USER CLICKED: " + linkText);
+
+                // ten first words of linktext
+                console.log("USER CLICKED: " + linkText.split(" ").slice(0, 10).join(" "));
                 
                 /**
                  * GET THE TARGET PASSAGE (optional info)
